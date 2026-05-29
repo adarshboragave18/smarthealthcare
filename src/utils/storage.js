@@ -2,6 +2,7 @@ const USERS_KEY = "shg_users";
 
 export function saveUser(userData) {
   const users = getAllUsers();
+  // Overwrite if phone already exists (update), else add new
   const existing = users.findIndex((u) => u.phone === userData.phone);
   if (existing >= 0) {
     users[existing] = userData;
