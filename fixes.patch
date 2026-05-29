@@ -1,0 +1,73 @@
+*** Begin Patch
+*** Update File: src/utils/otp.js
+@@
+-import { sendPhoneOtp } from "../firebase";
+-
+-const DEMO_SMS = import.meta.env.VITE_DEMO_SMS === "true";
+-
+-function assertValidPhone(phone) {
+-  if (!/^[6-9]\d{9}$/.test(phone)) {
+-    throw new Error("Enter a valid 10-digit Indian mobile number.");
+-  }
+-}
+-
+-export async function sendOTP(phone) {
+-  assertValidPhone(phone);
+-
+-  if (DEMO_SMS) {
+-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+-    console.log(`📱 DEMO OTP for +91${phone}: ${otp}`);
+-    return { mode: "demo", otp, demoOtp: otp, expiresIn: 300, resendIn: 30 };
+-  }
+-
+-  const confirmationResult = await sendPhoneOtp(`+91${phone}`);
+-  return { mode: "real", confirmationResult, expiresIn: 300, resendIn: 30 };
+-}
+-
+-export async function verifyOTP(phone, otp, generatedOtp, mode = "demo", confirmationResult = null) {
+-  if (mode === "demo") {
+-    return otp.trim() === (generatedOtp || "").trim();
+-  }
+-
+-  if (!confirmationResult) {
+-    throw new Error("Confirmation result unavailable. Please request a new code.");
+-  }
+-
+-  await confirmationResult.confirm(otp.trim());
+-  return true;
+-}
++import { sendPhoneOtp } from "../firebase";
++
++const DEMO_SMS = import.meta.env.VITE_DEMO_SMS === "true";
++
++function assertValidPhone(phone) {
++  if (!/^[6-9]\d{9}$/.test(phone)) {
++    throw new Error("Enter a valid 10-digit Indian mobile number.");
++  }
++}
++
++export async function sendOTP(phone) {
++  assertValidPhone(phone);
++
++  if (DEMO_SMS) {
++    const otp = Math.floor(100000 + Math.random() * 900000).toString();
++    return { mode: "demo", otp, demoOtp: otp, expiresIn: 300, resendIn: 30 };
++  }
++
++  const confirmationResult = await sendPhoneOtp(`+91${phone}`);
++  return { mode: "real", confirmationResult, expiresIn: 300, resendIn: 30 };
++}
++
++export async function verifyOTP(phone, otp, generatedOtp, mode = "demo", confirmationResult = null) {
++  if (mode === "demo") {
++    return otp.trim() === (generatedOtp || "").trim();
++  }
++
++  if (!confirmationResult) {
++    throw new Error("Confirmation result unavailable. Please request a new code.");
++  }
++
++  await confirmationResult.confirm(otp.trim());
++  return true;
++}
+*** End Patch
