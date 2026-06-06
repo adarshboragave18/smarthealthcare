@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { saveUser, getUserByPhone } from "../utils/storage";
+import { saveUser, getUserByPhoneAsync } from "../utils/storage";
 import { sendOTP, verifyOTP } from "../utils/otp";
 import { initRecaptcha } from "../firebase";
 import DarkToggle from "./DarkToggle";
@@ -91,7 +91,7 @@ export default function Register({ onBack, darkMode, toggleDark }) {
       return;
     }
 
-    const existing = getUserByPhone(phone);
+    const existing = await getUserByPhoneAsync(phone);
     if (existing) {
       showToast("error", "This mobile number is already registered.");
       return;

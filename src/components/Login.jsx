@@ -2,7 +2,7 @@
 import { sendOTP, verifyOTP } from "../utils/otp";
 import { initRecaptcha } from "../firebase";
 import { hasNativePhoneAuth, startNativePhoneVerification, verifyNativeCode, addNativeListeners } from "../utils/nativePhoneAuth";
-import { getUserByPhone } from "../utils/storage";
+import { getUserByPhoneAsync } from "../utils/storage";
 import { syncUserDataFromCloud, isCloudStorageAvailable } from "../utils/cloudStorage";
 import DarkToggle from "./DarkToggle";
 import DemoOtpPopup from "./DemoOtpPopup";
@@ -111,7 +111,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
       return;
     }
 
-    const user = getUserByPhone(phone);
+    const user = await getUserByPhoneAsync(phone);
     if (!user) {
       showToast("error", t("mobile_not_registered", lang));
       return;
@@ -180,14 +180,13 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
         return;
       }
 
-      let user = getUserByPhone(phone);
+      let user = await getUserByPhoneAsync(phone);
       if (!user) {
         showToast("error", t("mobile_not_registered", lang));
         setStep("phone");
         return;
       }
 
-      // Sync user data from cloud if available
       if (isCloudStorageAvailable()) {
         try {
           showToast("info", "Loading your profile across devices...");
