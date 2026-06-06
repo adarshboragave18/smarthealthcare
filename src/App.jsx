@@ -4,6 +4,7 @@ import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import DemoOtpBanner from "./components/DemoOtpBanner";
 import { getUserFromStorage } from "./utils/storage";
+import { saveUserToCloud, isCloudStorageAvailable } from "./utils/cloudStorage";
 
 export default function App() {
   const [page, setPage] = useState("login"); // login | register | dashboard
@@ -29,6 +30,14 @@ export default function App() {
     const now = new Date().toISOString();
     const updated = { ...userData, lastLogin: now };
     localStorage.setItem("shg_user", JSON.stringify(updated));
+    
+    // Save to cloud for cross-device access
+    if (isCloudStorageAvailable()) {
+      saveUserToCloud(updated).catch((err) => {
+        console.warn("Failed to save user to cloud on login:", err);
+      });
+    }
+    
     setUser(updated);
     setPage("dashboard");
   };

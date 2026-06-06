@@ -3,6 +3,7 @@ import { sendOTP, verifyOTP } from "../utils/otp";
 import { initRecaptcha } from "../firebase";
 import { hasNativePhoneAuth, startNativePhoneVerification, verifyNativeCode, addNativeListeners } from "../utils/nativePhoneAuth";
 import { getUserByPhone } from "../utils/storage";
+import { syncUserDataFromCloud, isCloudStorageAvailable } from "../utils/cloudStorage";
 import DarkToggle from "./DarkToggle";
 import DemoOtpPopup from "./DemoOtpPopup";
 import Toast from "./Toast";
@@ -179,11 +180,21 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
         return;
       }
 
-      const user = getUserByPhone(phone);
+      let user = getUserByPhone(phone);
       if (!user) {
         showToast("error", t("mobile_not_registered", lang));
         setStep("phone");
         return;
+      }
+
+      // Sync user data from cloud if available
+      if (isCloudStorageAvailable()) {
+        try {
+          showToast("info", "Loading your profile across devices...");
+          user = await syncUserDataFromCloud(phone, user);
+        } catch (syncErr) {
+          console.warn("Cloud sync failed, using local data:", syncErr);
+        }
       }
 
       showToast("success", "OTP verified. Logging in…");

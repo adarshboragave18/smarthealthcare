@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -30,6 +31,7 @@ export function isFirebaseConfigured() {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 if (typeof window !== "undefined" && isFirebaseConfigured() && import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
   getAnalytics(app);

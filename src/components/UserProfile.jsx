@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useLanguage } from "../useLanguage";
 import { t } from "../utils/i18n";
 import { saveUser } from "../utils/storage";
+import { updateUserInCloud, isCloudStorageAvailable } from "../utils/cloudStorage";
 
 export default function UserProfile({ user }) {
   const { lang } = useLanguage();
@@ -60,6 +61,13 @@ export default function UserProfile({ user }) {
       const updated = { ...user, photo: dataUrl };
       saveUser(updated);
       localStorage.setItem("shg_user", JSON.stringify(updated));
+
+      // Sync photo update to cloud
+      if (isCloudStorageAvailable()) {
+        updateUserInCloud(user.phone, { photo: dataUrl }).catch((err) => {
+          console.warn("Failed to sync photo to cloud:", err);
+        });
+      }
     } catch (err) {
       setPhotoError("Could not process this image. Try a different file.");
     }
@@ -69,6 +77,13 @@ export default function UserProfile({ user }) {
     localStorage.setItem("shg_lastcheckup", checkupInput);
     setLastCheckup(checkupInput);
     setEditCheckup(false);
+
+    // Sync checkup date to cloud
+    if (isCloudStorageAvailable()) {
+      updateUserInCloud(user.phone, { lastCheckup: checkupInput }).catch((err) => {
+        console.warn("Failed to sync checkup date to cloud:", err);
+      });
+    }
   };
 
   const bmi = user?.weight && user?.height
@@ -123,7 +138,20 @@ export default function UserProfile({ user }) {
           />
           <div className="mt-2 flex justify-center gap-2">
             <button onClick={() => fileRef.current && fileRef.current.click()} className="text-sm bg-white/20 text-white px-3 py-1 rounded-full">Change Photo</button>
-            {photo && <button onClick={() => { setPhoto(null); setPhotoError(""); try { saveUser({ ...user, photo: null }); localStorage.setItem('shg_user', JSON.stringify({ ...user, photo: null })); } catch (e) {} }} className="text-sm bg-white/10 text-white px-3 py-1 rounded-full">Remove</button>}
+            {photo && <button onClick={() => { 
+              setPhoto(null); 
+              setPhotoError(""); 
+              try { 
+                const updated = { ...user, photo: null };
+                saveUser(updated); 
+                localStorage.setItem('shg_user', JSON.stringify(updated));
+                if (isCloudStorageAvailable()) {
+                  updateUserInCloud(user.phone, { photo: null }).catch((err) => {
+                    console.warn("Failed to sync photo removal to cloud:", err);
+                  });
+                }
+              } catch (e) {} 
+            }} className="text-sm bg-white/10 text-white px-3 py-1 rounded-full">Remove</button>}
           </div>
           <p className="mt-2 text-xs text-white/80">Supported: JPG, PNG, GIF. Max 5MB; large images are resized automatically.</p>
           {photoError && <p className="mt-2 text-xs text-red-200">{photoError}</p>}

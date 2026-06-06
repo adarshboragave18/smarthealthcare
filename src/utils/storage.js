@@ -1,3 +1,5 @@
+import { isCloudStorageAvailable, saveUserToCloud } from "./cloudStorage";
+
 const USERS_KEY = "shg_users";
 
 export function saveUser(userData) {
@@ -10,6 +12,13 @@ export function saveUser(userData) {
     users.push(userData);
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+  // Also save to cloud if available
+  if (isCloudStorageAvailable()) {
+    saveUserToCloud(userData).catch((err) => {
+      console.warn("Failed to sync user to cloud storage:", err);
+    });
+  }
 }
 
 export function getAllUsers() {
