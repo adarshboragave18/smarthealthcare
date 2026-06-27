@@ -8,12 +8,12 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
   const { lang, setLang } = useLanguage();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-xl dark:border-gray-700/50 dark:bg-gray-900/90">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-4">
         {/* Logo */}
-        <button onClick={() => setActive("Home")} className="flex items-center gap-2 group">
-          <span className="text-2xl group-hover:animate-bounce">🏥</span>
-          <span className="font-bold text-lg text-gray-900 dark:text-white">
+        <button onClick={() => setActive("Home")} className="group flex items-center gap-2">
+          <span className="text-xl group-hover:animate-bounce sm:text-2xl">🏥</span>
+          <span className="text-base font-bold text-gray-900 dark:text-white sm:text-lg">
             Smart<span className="text-teal-500">Health</span>
           </span>
         </button>
@@ -40,10 +40,12 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <DarkToggle darkMode={darkMode} toggle={toggleDark} />
           {/* Language selector */}
-          <LanguageSelector />
+          <div className="hidden xs:block">
+            <LanguageSelector />
+          </div>
           <div className="hidden md:flex items-center gap-2">
             <div className="text-right">
               <p className="text-xs font-semibold text-gray-800 dark:text-white">{user?.name}</p>
@@ -64,7 +66,7 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
           {/* Mobile menu button */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 md:hidden"
           >
             <div className="space-y-1.5">
               <span className={`block w-5 h-0.5 bg-current transition-all ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
@@ -77,12 +79,12 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-4 space-y-1">
+        <div className="space-y-1 border-t border-gray-200 bg-white px-3 py-3 dark:border-gray-700 dark:bg-gray-900 md:hidden sm:px-4">
           {sections.map((s) => (
             <button
               key={s}
               onClick={() => { setActive(s); setMenuOpen(false); }}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium transition-all ${
                 active === s
                   ? "bg-teal-500 text-white"
                   : "text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-gray-800"
@@ -91,7 +93,7 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
               {s}
             </button>
           ))}
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="flex items-center justify-between border-t border-gray-200 pt-2 dark:border-gray-700">
             <div>
               <p className="text-sm font-semibold text-gray-800 dark:text-white">{user?.name}</p>
               <p className="text-xs text-gray-500">
@@ -100,7 +102,7 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
             </div>
             <button
               onClick={onLogout}
-              className="bg-red-500 text-white text-xs px-4 py-2 rounded-lg"
+              className="rounded-lg bg-red-500 px-4 py-2 text-xs text-white"
             >
               {t("logout", lang)}
             </button>

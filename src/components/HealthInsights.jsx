@@ -102,32 +102,32 @@ export default function HealthInsights({ user }) {
   const insights = useMemo(() => computeInsights(user || {}, lastCheckup), [user, lastCheckup]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 px-3 py-8 dark:bg-gray-950 sm:px-4 sm:py-12">
+      <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <div className="text-center">
           <p className="inline-flex items-center gap-2 rounded-full bg-teal-100 text-teal-700 px-4 py-2 text-sm font-semibold dark:bg-teal-900/20 dark:text-teal-200">
             ✨ {t("insights_title", lang)}
           </p>
-          <h2 className="mt-4 text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">{t("insights_sub", lang)}</h2>
-          <p className="mt-3 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{t("insights_description", lang)}</p>
+          <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl md:text-4xl">{t("insights_sub", lang)}</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-600 dark:text-gray-400 sm:text-base">{t("insights_description", lang)}</p>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-          <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 shadow-2xl border border-gray-100 dark:border-gray-700">
+          <div className="rounded-[1.25rem] border border-gray-100 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-800 sm:rounded-[2rem] sm:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.18em] text-teal-500 font-semibold">{t("insights_score", lang)}</p>
-                <h3 className="text-5xl font-bold text-gray-900 dark:text-white">{insights.score}</h3>
+                <h3 className="text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl">{insights.score}</h3>
                 <p className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${insights.statusColor}`}>{insights.status}</p>
               </div>
-              <div className="rounded-3xl bg-slate-100 dark:bg-slate-900 p-4">
+              <div className="rounded-3xl bg-slate-100 p-4 dark:bg-slate-900">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{t("insights_last_checkup", lang)}</p>
                 <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">{insights.lastCheckupSummary}</p>
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl bg-slate-50 dark:bg-slate-900 p-5">
+            <div className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
+              <div className="rounded-3xl bg-slate-50 p-4 dark:bg-slate-900 sm:p-5">
                 <p className="text-xs text-slate-500 uppercase tracking-[0.24em]">{t("insights_goal", lang)}</p>
                 <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">{insights.nextGoal}</p>
               </div>
@@ -141,9 +141,9 @@ export default function HealthInsights({ user }) {
               </div>
             </div>
 
-            <div className="mt-8 space-y-4">
+            <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
               {insights.summary.map((line, index) => (
-                <div key={index} className="rounded-3xl bg-slate-50 dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-700">
+                <div key={index} className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900 sm:p-5">
                   <p className="text-sm text-gray-700 dark:text-gray-300">{line}</p>
                 </div>
               ))}
@@ -151,9 +151,9 @@ export default function HealthInsights({ user }) {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t("insights_action_title", lang)}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{t("insights_action_sub", lang)}</p>
+            <div className="rounded-[1.25rem] border border-gray-100 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-800 sm:rounded-[2rem] sm:p-6">
+              <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white sm:mb-4">{t("insights_action_title", lang)}</h3>
+              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400 sm:mb-6">{t("insights_action_sub", lang)}</p>
               <div className="space-y-3">
                 {insights.recommendations.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start rounded-3xl bg-slate-50 dark:bg-slate-900 p-4">
@@ -164,8 +164,8 @@ export default function HealthInsights({ user }) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white rounded-[2rem] p-6 shadow-2xl border border-white/10">
-              <h3 className="text-lg font-semibold mb-4">{t("insights_focus", lang)}</h3>
+            <div className="rounded-[1.25rem] border border-white/10 bg-gradient-to-br from-slate-950 to-slate-900 p-4 text-white shadow-2xl sm:rounded-[2rem] sm:p-6">
+              <h3 className="mb-3 text-lg font-semibold sm:mb-4">{t("insights_focus", lang)}</h3>
               <div className="space-y-3">
                 {insights.focus.map((item, idx) => (
                   <div key={idx} className="rounded-3xl bg-white/5 p-4">
