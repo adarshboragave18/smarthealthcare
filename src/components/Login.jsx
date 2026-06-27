@@ -234,7 +234,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
     <div className="min-h-screen bg-gradient-to-br from-teal-900 via-cyan-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-float" />
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/15 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/15 blur-3xl animate-glow-pulse" />
       </div>
 
       <div className="relative z-10 w-full max-w-lg">
@@ -242,23 +242,25 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
           <DarkToggle darkMode={darkMode} toggle={toggleDark} />
         </div>
 
-        <div className="mb-8 text-center text-white">
-          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-teal-400 to-cyan-500 shadow-2xl shadow-cyan-500/20">
+        <div className="mb-8 animate-slide-up text-center text-white">
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-teal-400 to-cyan-500 shadow-2xl shadow-cyan-500/20 animate-bounce-slow shimmer-effect">
             <span className="text-4xl">🏥</span>
           </div>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight font-display">SmartHealth</h1>
           <p className="mt-2 text-sm text-cyan-200/80">Secure OTP login for your healthcare dashboard</p>
-          <SmsModeBadge />
+          <div className="mt-3 flex justify-center">
+            <SmsModeBadge />
+          </div>
         </div>
 
-        <div className="glass rounded-[2rem] border border-white/10 bg-white/10 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
+        <div className="glass glass-panel animate-card-enter rounded-[2rem] p-8">
           <div className="mb-6 text-center">
             <h2 className="text-2xl font-semibold text-white">{step === "phone" ? t("login_with_mobile", lang) : t("enter_otp", lang)}</h2>
             <p className="mt-2 text-sm text-slate-300">{step === "phone" ? "Use your registered +91 phone number to log in." : "Enter the 6-digit code sent via SMS."}</p>
           </div>
 
           {step === "phone" && (
-            <div className="space-y-5">
+            <div key="phone" className="animate-card-enter space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-cyan-100">{t("mobile_number", lang)}</label>
                 <div className="flex gap-3">
@@ -278,7 +280,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
                 type="button"
                 onClick={handleSendOTP}
                 disabled={loading}
-                className="w-full rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? t("sending_otp", lang) : t("send_otp", lang)}
               </button>
@@ -287,7 +289,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
           )}
 
           {step === "otp" && (
-            <div className="space-y-5">
+            <div key="otp" className="animate-card-enter space-y-5">
               <div>
                 <p className="text-center text-sm text-slate-400">
                   {t("otp_sent", lang)} +91 {phone}.
@@ -306,7 +308,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
                 type="button"
                 onClick={handleVerifyOTP}
                 disabled={loading}
-                className="w-full rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? t("verify_and_login", lang) : t("verify_and_login", lang)}
               </button>
@@ -316,7 +318,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={loading || resendCountdown > 0}
-                  className="rounded-2xl border border-white/15 bg-slate-950/60 px-5 py-3 text-sm text-white transition hover:border-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/15 bg-slate-950/60 px-5 py-3 text-sm text-white transition-all duration-300 hover:border-cyan-300/60 hover:bg-slate-900/80 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {resendCountdown > 0 ? `Resend available in ${resendCountdown}s` : "Resend OTP"}
                 </button>
