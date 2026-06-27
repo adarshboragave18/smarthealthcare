@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import DemoOtpBanner from "./components/DemoOtpBanner";
 import { getUserFromStorage } from "./utils/storage";
-import { saveUserToCloud, isCloudStorageAvailable } from "./utils/cloudStorage";
+import { saveUserToCloud, isCloudStorageAvailable, flushPendingCloudUpdates } from "./utils/cloudStorage";
 
 export default function App() {
   const [page, setPage] = useState("login"); // login | register | dashboard
@@ -26,27 +26,44 @@ export default function App() {
     }
   }, []);
 
-  const handleLogin = (userData) => {
+  useEffect(() => {
+    if (!isCloudStorageAvailable()) return;
+
+    flushPendingCloudUpdates().catch((err) => {
+      console.warn("Pending cloud save flush failed on startup:", err);
+    });
+
+    const onFocus = () => {
+      flushPendingCloudUpdates().catch((err) => {
+        console.warn("Pending cloud save flush failed on focus:", err);
+      });
+    };
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
+  const handleLogin = useCallback((userData) => {
     const now = new Date().toISOString();
     const updated = { ...userData, lastLogin: now };
     localStorage.setItem("shg_user", JSON.stringify(updated));
-    
+
     // Save to cloud for cross-device access
     if (isCloudStorageAvailable()) {
       saveUserToCloud(updated).catch((err) => {
         console.warn("Failed to save user to cloud on login:", err);
       });
     }
-    
+
     setUser(updated);
     setPage("dashboard");
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("shg_user");
     setUser(null);
     setPage("login");
-  };
+  }, []);
 
   return (
     <div className={`app-background ${darkMode ? "dark" : ""} transition-colors duration-500`}> 

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { saveUser, getUserByPhoneAsync } from "../utils/storage";
+import { saveUserLocally, getUserByPhoneAsync } from "../utils/storage";
+import { saveUserToCloud } from "../utils/cloudStorage";
 import { sendOTP, verifyOTP } from "../utils/otp";
 import { initRecaptcha } from "../firebase";
 import DarkToggle from "./DarkToggle";
@@ -69,7 +70,6 @@ export default function Register({ onBack, darkMode, toggleDark }) {
         try {
           await initRecaptcha();
         } catch (e) {
-          // eslint-disable-next-line no-console
           console.error('[recaptcha] init failed', e);
         }
       })();
@@ -91,7 +91,14 @@ export default function Register({ onBack, darkMode, toggleDark }) {
       return;
     }
 
-    const existing = await getUserByPhoneAsync(phone);
+    let existing;
+    try {
+      existing = await getUserByPhoneAsync(phone);
+    } catch (error) {
+      showToast("error", "Unable to verify your phone number right now. Please try again shortly.");
+      return;
+    }
+
     if (existing) {
       showToast("error", "This mobile number is already registered.");
       return;
@@ -131,7 +138,19 @@ export default function Register({ onBack, darkMode, toggleDark }) {
     try {
       await verifyOTP(form.phone, otp, demoOtp, otpMode, confirmationResult);
       const userData = { ...form, age, registeredAt: new Date().toISOString(), lastLogin: null };
-      saveUser(userData);
+      saveUserLocally(userData);
+
+      if (import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+        try {
+          await saveUserToCloud(userData);
+        } catch (cloudError) {
+          console.warn("Cloud save failed during registration:", cloudError);
+          showToast("warning", "Registered locally, but cloud sync failed. Please try login on the same device or retry registration.");
+          setStep("success");
+          return;
+        }
+      }
+
       setStep("success");
       showToast("success", "Registration successful.");
       window.setTimeout(() => onBack(), 2200);

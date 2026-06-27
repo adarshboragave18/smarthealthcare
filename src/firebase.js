@@ -67,7 +67,6 @@ try {
 // Development runtime diagnostics to help capture the source of `appVerificationDisabledForTesting` errors.
 if (import.meta.env.DEV) {
   try {
-    // eslint-disable-next-line no-console
     console.debug("[firebase] config check", {
       firebaseConfig: {
         apiKey: !!firebaseConfig.apiKey,
@@ -124,7 +123,6 @@ export async function initRecaptcha(containerId = "recaptcha-container") {
       const recaptchaVisible = import.meta.env.VITE_RECAPTCHA_VISIBLE === "true";
       const recaptchaSize = recaptchaVisible ? "normal" : "invisible";
 
-      // eslint-disable-next-line no-console
       if (import.meta.env.DEV) console.debug("[firebase] creating RecaptchaVerifier (first time)", { containerId, authSettings: auth.settings, recaptchaSize, recaptchaVisible });
 
       window.recaptchaVerifier = new RecaptchaVerifier(
@@ -135,7 +133,6 @@ export async function initRecaptcha(containerId = "recaptcha-container") {
           badge: "bottomright",
           callback: (token) => {
             // Optional: notify app that reCAPTCHA was solved
-            // eslint-disable-next-line no-console
             if (import.meta.env.DEV) console.log("reCAPTCHA solved", { token });
           },
         }
@@ -145,7 +142,6 @@ export async function initRecaptcha(containerId = "recaptcha-container") {
       try {
         await window.recaptchaVerifier.render();
       } catch (renderErr) {
-        // eslint-disable-next-line no-console
         console.error("[firebase] reCAPTCHA render failed", renderErr);
         throw renderErr;
       }
@@ -154,7 +150,6 @@ export async function initRecaptcha(containerId = "recaptcha-container") {
     return window.recaptchaVerifier;
   } catch (err) {
     // log then rethrow with clearer context
-    // eslint-disable-next-line no-console
     console.error("[firebase] RecaptchaVerifier init error", err);
     throw new Error("Failed to initialize reCAPTCHA verifier: " + (err?.message || err));
   }
@@ -184,7 +179,6 @@ export async function sendPhoneOtp(phone) {
       try { localStorage.setItem(key, JSON.stringify(payload)); } catch (e) {}
     }
 
-    // eslint-disable-next-line no-console
     console.warn("[firebase] PHONE_AUTH_DEV_BYPASS active — using local mock confirmationResult", { phone });
 
     const confirmationResult = {

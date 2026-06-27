@@ -1,8 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { sendOTP, verifyOTP } from "../utils/otp";
-import { initRecaptcha } from "../firebase";
-import { hasNativePhoneAuth, startNativePhoneVerification, verifyNativeCode, addNativeListeners } from "../utils/nativePhoneAuth";
-import { getUserByPhoneAsync } from "../utils/storage";
+import { getUserByPhone } from "../utils/storage";
 import { syncUserDataFromCloud, isCloudStorageAvailable } from "../utils/cloudStorage";
 import DarkToggle from "./DarkToggle";
 import DemoOtpPopup from "./DemoOtpPopup";
@@ -56,26 +54,14 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
       showToast("error", "Firebase phone auth is unconfigured. Set VITE_FIREBASE_API_KEY and VITE_DEMO_SMS in .env");
     }
 
-    // Initialize visible reCAPTCHA once when running with real Firebase
-    if (!demo && firebaseApiKey) {
-      (async () => {
-        try {
-          await initRecaptcha();
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('[recaptcha] init failed', e);
-        }
-      })();
-    }
     // If native plugin available, add listeners
     let removeListeners = null;
     if (typeof window !== 'undefined') {
       (async () => {
         try {
-          const { addNativeListeners } = await import('../utils/nativePhoneAuth');
-          removeListeners = addNativeListeners({
+          const nativePhoneAuth = await import('../utils/nativePhoneAuth');
+          removeListeners = nativePhoneAuth.addNativeListeners({
             codeSent: (data) => {
-              // store verificationId so verify can use it
               setConfirmationResult({ verificationId: data.verificationId });
               setOtpMode('native');
               setStep('otp');
@@ -102,7 +88,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
     return () => {
       if (removeListeners) removeListeners();
     };
-  }, []);
+  }, [onLogin]);
 
   async function handleSendOTP() {
     setOtp("");
@@ -111,28 +97,27 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
       return;
     }
 
-    const user = await getUserByPhoneAsync(phone);
-    if (!user) {
-      showToast("error", t("mobile_not_registered", lang));
-      return;
-    }
-
     setLoading(true);
 
     try {
       // If running as a native app and plugin is available, use native flow
-      if (hasNativePhoneAuth()) {
-        const fullPhone = `+91${phone}`;
-        const result = await startNativePhoneVerification(fullPhone);
-        // result may include verificationId immediately; also codeSent event is emitted
-        setOtpMode('native');
-        setConfirmationResult({ verificationId: result?.verificationId });
-        setStep('otp');
-        setCountdown(300);
-        setResendCountdown(30);
-        showToast('success', 'OTP sent (native).');
-        setLoading(false);
-        return;
+      try {
+        const nativePhoneAuth = await import('../utils/nativePhoneAuth');
+        if (nativePhoneAuth?.hasNativePhoneAuth?.()) {
+          const fullPhone = `+91${phone}`;
+          const result = await nativePhoneAuth.startNativePhoneVerification(fullPhone);
+          // result may include verificationId immediately; also codeSent event is emitted
+          setOtpMode('native');
+          setConfirmationResult({ verificationId: result?.verificationId });
+          setStep('otp');
+          setCountdown(300);
+          setResendCountdown(30);
+          showToast('success', 'OTP sent (native).');
+          setLoading(false);
+          return;
+        }
+      } catch (loadErr) {
+        console.warn('Native auth module load failed:', loadErr);
       }
 
       const result = await sendOTP(phone);
@@ -168,9 +153,14 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
     try {
       let success = false;
       if (otpMode === 'native' && confirmationResult && confirmationResult.verificationId) {
-        // Verify using native plugin
-        await verifyNativeCode(confirmationResult.verificationId, otp);
-        success = true;
+        try {
+          const nativePhoneAuth = await import('../utils/nativePhoneAuth');
+          await nativePhoneAuth.verifyNativeCode(confirmationResult.verificationId, otp);
+          success = true;
+        } catch (nativeErr) {
+          console.warn('Native code verify failed:', nativeErr);
+          success = false;
+        }
       } else {
         const res = await verifyOTP(phone, otp, generatedOtp, otpMode, confirmationResult);
         success = res === true;
@@ -180,20 +170,26 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
         return;
       }
 
-      let user = await getUserByPhoneAsync(phone);
-      if (!user) {
-        showToast("error", t("mobile_not_registered", lang));
-        setStep("phone");
-        return;
+      let user = getUserByPhone(phone);
+
+      if (!user && isCloudStorageAvailable()) {
+        try {
+          user = await syncUserDataFromCloud(phone, {
+            phone,
+            name: "",
+            lastLogin: null,
+          });
+        } catch (syncErr) {
+          console.warn("Cloud sync failed, using a lightweight profile:", syncErr);
+        }
       }
 
-      if (isCloudStorageAvailable()) {
-        try {
-          showToast("info", "Loading your profile across devices...");
-          user = await syncUserDataFromCloud(phone, user);
-        } catch (syncErr) {
-          console.warn("Cloud sync failed, using local data:", syncErr);
-        }
+      if (!user) {
+        user = {
+          phone,
+          name: "",
+          lastLogin: null,
+        };
       }
 
       showToast("success", "OTP verified. Logging in…");

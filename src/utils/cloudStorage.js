@@ -10,35 +10,183 @@ import {
 
 const USERS_COLLECTION = "users";
 
+function timeoutPromise(ms, message) {
+  return new Promise((_, reject) => {
+    const timer = setTimeout(() => {
+      clearTimeout(timer);
+      reject(new Error(message));
+    }, ms);
+  });
+}
+
+function normalizePhone(phone) {
+  return phone?.toString().replace(/\D/g, "") || "";
+}
+
+const PENDING_CLOUD_UPDATES_KEY = "shg_pending_cloud_updates";
+
+function getCloudDocIds(phone) {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return [];
+  const ids = [normalized];
+  if (normalized.length === 10) {
+    ids.push(`+91${normalized}`);
+  } else if (normalized.length === 12 && normalized.startsWith("91")) {
+    ids.push(`+${normalized}`);
+  }
+  return [...new Set(ids)];
+}
+
+function getPendingCloudUpdates() {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_CLOUD_UPDATES_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function setPendingCloudUpdates(updates) {
+  localStorage.setItem(PENDING_CLOUD_UPDATES_KEY, JSON.stringify(updates));
+}
+
+function queueCloudSave(userData) {
+  const normalizedPhone = normalizePhone(userData.phone);
+  if (!normalizedPhone) return;
+  const updates = getPendingCloudUpdates();
+  const payload = { ...userData, phone: normalizedPhone };
+  const existingIndex = updates.findIndex((item) => normalizePhone(item.phone) === normalizedPhone);
+  if (existingIndex >= 0) {
+    updates[existingIndex] = payload;
+  } else {
+    updates.push(payload);
+  }
+  setPendingCloudUpdates(updates);
+  console.log(`↻ Queued cloud save for phone ${normalizedPhone}`);
+}
+
+function removePendingCloudUpdate(phone) {
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) return;
+  const updates = getPendingCloudUpdates().filter((item) => normalizePhone(item.phone) !== normalizedPhone);
+  setPendingCloudUpdates(updates);
+}
+
+function parseFirestoreValue(value) {
+  if (value == null) return null;
+  if (value.stringValue !== undefined) return value.stringValue;
+  if (value.integerValue !== undefined) return Number(value.integerValue);
+  if (value.doubleValue !== undefined) return Number(value.doubleValue);
+  if (value.booleanValue !== undefined) return value.booleanValue;
+  if (value.timestampValue !== undefined) return value.timestampValue;
+  if (value.mapValue) return parseFirestoreDocument({ fields: value.mapValue.fields });
+  if (value.arrayValue) return (value.arrayValue.values || []).map(parseFirestoreValue);
+  return null;
+}
+
+function parseFirestoreDocument(firestoreDoc) {
+  const parsed = {};
+  const fields = firestoreDoc.fields || {};
+  Object.keys(fields).forEach((key) => {
+    parsed[key] = parseFirestoreValue(fields[key]);
+  });
+  return parsed;
+}
+
+async function getUserFromCloudRest(docId) {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  if (!apiKey || !projectId) {
+    throw new Error("Missing Firebase REST config");
+  }
+
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${USERS_COLLECTION}/${encodeURIComponent(docId)}?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Firestore REST read failed (${response.status}): ${body}`);
+  }
+
+  const document = await response.json();
+  return parseFirestoreDocument(document);
+}
+
+function isRecoverableCloudError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("client is offline") ||
+    message.includes("offline") ||
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("timed out") ||
+    message.includes("timeout")
+  );
+}
+
 /**
  * Save or update user profile in Firestore (cloud)
  * Uses phone number as document ID for easy lookup across devices
  */
-export async function saveUserToCloud(userData) {
+async function saveUserToCloudInternal(userData, { queueOnFailure = true } = {}) {
+  if (!userData || !userData.phone) {
+    throw new Error("User data must include phone number");
+  }
+
+  const normalizedPhone = normalizePhone(userData.phone);
+  if (!normalizedPhone) {
+    throw new Error("Invalid phone number for cloud save");
+  }
+
+  const userDocRef = doc(db, USERS_COLLECTION, normalizedPhone);
+  const dataToSave = {
+    ...userData,
+    phone: normalizedPhone,
+    updatedAt: serverTimestamp(),
+  };
+
   try {
-    if (!userData || !userData.phone) {
-      throw new Error("User data must include phone number");
-    }
-
-    const userDocRef = doc(db, USERS_COLLECTION, userData.phone);
-    const dataToSave = {
-      ...userData,
-      updatedAt: serverTimestamp(),
-    };
-
-    // If document doesn't exist, add createdAt timestamp
     const existing = await getDoc(userDocRef);
     if (!existing.exists()) {
       dataToSave.createdAt = serverTimestamp();
     }
 
     await setDoc(userDocRef, dataToSave, { merge: true });
-    console.log(`✓ User data saved to cloud for phone: ${userData.phone}`);
+    removePendingCloudUpdate(normalizedPhone);
+    console.log(`✓ User data saved to cloud for phone: ${normalizedPhone}`);
     return true;
   } catch (error) {
     console.error("Error saving user to cloud:", error);
+    if (queueOnFailure && isRecoverableCloudError(error)) {
+      queueCloudSave(userData);
+    }
     throw error;
   }
+}
+
+export async function saveUserToCloud(userData) {
+  return saveUserToCloudInternal(userData, { queueOnFailure: true });
+}
+
+export async function flushPendingCloudUpdates() {
+  const pending = getPendingCloudUpdates();
+  if (!pending.length) return [];
+
+  const results = [];
+  for (const userData of pending) {
+    try {
+      await saveUserToCloudInternal(userData, { queueOnFailure: false });
+      results.push({ phone: normalizePhone(userData.phone), success: true });
+    } catch (error) {
+      console.warn(`Pending cloud save retry failed for ${normalizePhone(userData.phone)}:`, error);
+      results.push({ phone: normalizePhone(userData.phone), success: false, error });
+    }
+  }
+  return results;
 }
 
 /**
@@ -47,23 +195,44 @@ export async function saveUserToCloud(userData) {
  */
 export async function getUserFromCloud(phone) {
   try {
-    if (!phone) {
+    const docIds = getCloudDocIds(phone);
+    if (!docIds.length) {
       throw new Error("Phone number is required");
     }
 
-    const userDocRef = doc(db, USERS_COLLECTION, phone);
-    const userSnap = await getDoc(userDocRef);
-
-    if (userSnap.exists()) {
-      console.log(`✓ User data loaded from cloud for phone: ${phone}`);
-      return userSnap.data();
-    } else {
-      console.log(`No user data found in cloud for phone: ${phone}`);
-      return null;
+    for (const docId of docIds) {
+      try {
+        const userDocRef = doc(db, USERS_COLLECTION, docId);
+        const userSnap = await Promise.race([
+          getDoc(userDocRef),
+          timeoutPromise(8000, "Cloud lookup timed out. Please try again.")
+        ]);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          console.log(`✓ User data loaded from cloud for phone key: ${docId}`);
+          return { ...data, phone: normalizePhone(data.phone || phone) };
+        }
+      } catch (innerError) {
+        console.warn(`Firestore SDK lookup failed for ${docId}:`, innerError);
+        if (isRecoverableCloudError(innerError)) {
+          try {
+            const restData = await getUserFromCloudRest(docId);
+            if (restData) {
+              console.log(`✓ User data loaded from Firestore REST for phone key: ${docId}`);
+              return { ...restData, phone: normalizePhone(restData.phone || phone) };
+            }
+          } catch (restError) {
+            console.error(`REST fallback also failed for ${docId}:`, restError);
+          }
+        }
+      }
     }
+
+    console.log(`No user data found in cloud for phone: ${phone}`);
+    return null;
   } catch (error) {
     console.error("Error fetching user from cloud:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -72,18 +241,19 @@ export async function getUserFromCloud(phone) {
  */
 export async function updateUserInCloud(phone, updates) {
   try {
-    if (!phone) {
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) {
       throw new Error("Phone number is required");
     }
 
-    const userDocRef = doc(db, USERS_COLLECTION, phone);
+    const userDocRef = doc(db, USERS_COLLECTION, normalizedPhone);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: serverTimestamp(),
     };
 
     await updateDoc(userDocRef, updatesWithTimestamp);
-    console.log(`✓ User data updated in cloud for phone: ${phone}`);
+    console.log(`✓ User data updated in cloud for phone: ${normalizedPhone}`);
     return true;
   } catch (error) {
     console.error("Error updating user in cloud:", error);
@@ -97,11 +267,12 @@ export async function updateUserInCloud(phone, updates) {
  */
 export function subscribeToUserChanges(phone, onDataChange, onError) {
   try {
-    if (!phone) {
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) {
       throw new Error("Phone number is required");
     }
 
-    const userDocRef = doc(db, USERS_COLLECTION, phone);
+    const userDocRef = doc(db, USERS_COLLECTION, normalizedPhone);
 
     const unsubscribe = onSnapshot(
       userDocRef,

@@ -9,5 +9,17 @@ export default defineConfig({
   // This forces Vite to filter out specific third-party warnings
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })

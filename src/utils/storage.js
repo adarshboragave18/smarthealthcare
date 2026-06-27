@@ -1,37 +1,48 @@
-import { isCloudStorageAvailable, saveUserToCloud, getUserFromCloud } from "./cloudStorage";
+import { isCloudStorageAvailable, saveUserToCloud, getUserFromCloud, flushPendingCloudUpdates } from "./cloudStorage";
 
 const USERS_KEY = "shg_users";
 
+function normalizePhone(phone) {
+  return phone?.toString().replace(/\D/g, "") || "";
+}
+
 export function saveUser(userData) {
+  const normalizedPhone = normalizePhone(userData.phone);
+  const payload = { ...userData, phone: normalizedPhone };
   const users = getAllUsers();
-  const existing = users.findIndex((u) => u.phone === userData.phone);
+  const existing = users.findIndex((u) => u.phone === normalizedPhone);
   if (existing >= 0) {
-    users[existing] = userData;
+    users[existing] = payload;
   } else {
-    users.push(userData);
+    users.push(payload);
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
   if (isCloudStorageAvailable()) {
-    saveUserToCloud(userData).catch((err) => {
+    saveUserToCloud(payload).catch((err) => {
       console.warn("Failed to sync user to cloud storage:", err);
+    });
+    flushPendingCloudUpdates().catch((err) => {
+      console.warn("Pending cloud save flush failed:", err);
     });
   }
 }
 
 export function saveUserLocally(userData) {
+  const normalizedPhone = normalizePhone(userData.phone);
+  const payload = { ...userData, phone: normalizedPhone };
   const users = getAllUsers();
-  const existing = users.findIndex((u) => u.phone === userData.phone);
+  const existing = users.findIndex((u) => u.phone === normalizedPhone);
   if (existing >= 0) {
-    users[existing] = userData;
+    users[existing] = payload;
   } else {
-    users.push(userData);
+    users.push(payload);
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
 export async function getUserByPhoneAsync(phone) {
-  const normalized = phone?.toString().replace(/\D/g, "") || "";
+  const normalized = normalizePhone(phone);
   if (!normalized) return null;
 
   const local = getUserByPhone(normalized);
