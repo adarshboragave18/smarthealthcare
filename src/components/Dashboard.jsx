@@ -28,7 +28,7 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDark }) {
         toggleDark={toggleDark}
       />
 
-      <main className="pt-16">
+      <main className="pt-20 sm:pt-16">
         {activeSection === "Home" && <Hero user={user} setActive={setActiveSection} />}
         {activeSection === "Insights" && <HealthInsights user={user} />}
         {activeSection === "BMI" && <BMICalculator user={user} />}
