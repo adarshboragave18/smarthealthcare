@@ -231,40 +231,40 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-900 via-cyan-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-teal-900 via-cyan-950 to-slate-950 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-float" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/15 blur-3xl animate-glow-pulse" />
       </div>
 
       <div className="relative z-10 w-full max-w-lg">
-        <div className="absolute top-4 right-4">
+        <div className="absolute right-2 top-2 sm:right-4 sm:top-4">
           <DarkToggle darkMode={darkMode} toggle={toggleDark} />
         </div>
 
-        <div className="mb-8 animate-slide-up text-center text-white">
-          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-teal-400 to-cyan-500 shadow-2xl shadow-cyan-500/20 animate-bounce-slow shimmer-effect">
-            <span className="text-4xl">🏥</span>
+        <div className="mb-5 animate-slide-up text-center text-white sm:mb-8">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-teal-400 to-cyan-500 shadow-2xl shadow-cyan-500/20 animate-bounce-slow shimmer-effect sm:h-24 sm:w-24 sm:rounded-[2rem]">
+            <span className="text-3xl sm:text-4xl">🏥</span>
           </div>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight font-display">SmartHealth</h1>
-          <p className="mt-2 text-sm text-cyan-200/80">Secure OTP login for your healthcare dashboard</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight font-display sm:mt-5 sm:text-4xl">SmartHealth</h1>
+          <p className="mt-2 text-xs leading-5 text-cyan-200/80 sm:text-sm">Secure OTP login for your healthcare dashboard</p>
           <div className="mt-3 flex justify-center">
             <SmsModeBadge />
           </div>
         </div>
 
-        <div className="glass glass-panel animate-card-enter rounded-[2rem] p-8">
-          <div className="mb-6 text-center">
-            <h2 className="text-2xl font-semibold text-white">{step === "phone" ? t("login_with_mobile", lang) : t("enter_otp", lang)}</h2>
-            <p className="mt-2 text-sm text-slate-300">{step === "phone" ? "Use your registered +91 phone number to log in." : "Enter the 6-digit code sent via SMS."}</p>
+        <div className="glass glass-panel animate-card-enter rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-8">
+          <div className="mb-5 text-center sm:mb-6">
+            <h2 className="text-xl font-semibold text-white sm:text-2xl">{step === "phone" ? t("login_with_mobile", lang) : t("enter_otp", lang)}</h2>
+            <p className="mt-2 text-xs leading-5 text-slate-300 sm:text-sm">{step === "phone" ? "Use your registered +91 phone number to log in." : "Enter the 6-digit code sent via SMS."}</p>
           </div>
 
           {step === "phone" && (
             <div key="phone" className="animate-card-enter space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-cyan-100">{t("mobile_number", lang)}</label>
-                <div className="flex gap-3">
-                  <span className="inline-flex items-center rounded-2xl border border-white/15 bg-white/10 px-4 text-sm font-semibold text-white">+91</span>
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+                  <span className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white sm:py-0">+91</span>
                   <input
                     type="tel"
                     inputMode="numeric"
@@ -284,7 +284,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
               >
                 {loading ? t("sending_otp", lang) : t("send_otp", lang)}
               </button>
-              <p className="text-center text-sm text-slate-400">No password needed — secure, fast, and built for healthcare.</p>
+              <p className="text-center text-xs leading-5 text-slate-400 sm:text-sm">No password needed — secure, fast, and built for healthcare.</p>
             </div>
           )}
 
@@ -340,7 +340,7 @@ export default function Login({ onLogin, onRegister, darkMode, toggleDark }) {
             </div>
           )}
 
-          <div className="mt-6 text-center text-sm text-slate-400">
+          <div className="mt-5 text-center text-sm text-slate-400 sm:mt-6">
             {t("new_user", lang)}{' '}
             <button onClick={onRegister} className="text-cyan-200 underline underline-offset-4 hover:text-white">
               {t("register_here", lang)}

@@ -33,8 +33,19 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-if (typeof window !== "undefined" && isFirebaseConfigured() && import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
-  getAnalytics(app);
+const shouldEnableAnalytics =
+  typeof window !== "undefined" &&
+  import.meta.env.PROD &&
+  import.meta.env.VITE_ENABLE_FIREBASE_ANALYTICS === "true" &&
+  Boolean(firebaseConfig.measurementId) &&
+  !["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+if (shouldEnableAnalytics) {
+  try {
+    getAnalytics(app);
+  } catch (error) {
+    console.warn("[firebase] analytics initialization skipped", error);
+  }
 }
 
 // Some Firebase builds expect `auth.settings` to exist with
