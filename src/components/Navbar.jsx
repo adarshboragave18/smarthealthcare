@@ -43,7 +43,7 @@ export default function Navbar({ user, sections, active, setActive, onLogout, da
         <div className="flex items-center gap-2 sm:gap-3">
           <DarkToggle darkMode={darkMode} toggle={toggleDark} />
           {/* Language selector */}
-          <div className="hidden xs:block">
+          <div className="hidden sm:block">
             <LanguageSelector />
           </div>
           <div className="hidden md:flex items-center gap-2">
